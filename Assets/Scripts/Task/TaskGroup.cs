@@ -1,0 +1,70 @@
+using System;
+using System.Linq;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using static UnityEngine.UI.GridLayoutGroup;
+
+public enum TaskGroupState
+{
+    Inactive,
+    Running,
+    Complete
+}
+
+[Serializable]
+public class TaskGroup
+{
+    [SerializeField]
+    Task[] tasks;
+
+    public IReadOnlyList<Task> Tasks => tasks;
+    public Quest Owner { get; private set; }
+    public bool IsAllTaskComplete => tasks.All(x => x.IsComplete);
+    public bool IsComplete => State == TaskGroupState.Complete;
+    public TaskGroupState State { get; private set; }
+
+    public void Setup(Quest owner)
+    {
+        this.Owner = owner;
+        foreach (var task in tasks)
+            task.Setup(owner);
+    }
+
+    public void Start()
+    {
+        State = TaskGroupState.Running;
+        foreach(var task in tasks)
+            task.Start();
+    }
+
+    public void End()
+    {
+        State = TaskGroupState.Complete;
+        foreach(var task in tasks)
+            task.End();
+    }
+
+    public void ReceiveReport(string category, object target, int successCount)
+    {
+        foreach(var task in tasks)
+        {
+            if (task.IsTarget(category, target))
+                task.ReceiveReport(successCount);
+        }
+    }
+
+    public void Complete()
+    {
+        if (IsComplete == true)
+            return;
+
+        State = TaskGroupState.Complete;
+
+        foreach(var task in tasks)
+        {
+            if(task.IsComplete == false)
+                task.Complete();
+        }
+    }
+}
